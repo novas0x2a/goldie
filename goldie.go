@@ -17,7 +17,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"testing"
 	"text/template"
 
 	"errors"
@@ -83,7 +82,7 @@ type goldie struct {
 
 // New creates a new golden file tester. If there is an issue with applying any
 // of the options, an error will be reported and t.FailNow() will be called.
-func New(t *testing.T, options ...Option) *goldie {
+func New(t TestingT, options ...Option) *goldie {
 	g := goldie{
 		fixtureDir:           defaultFixtureDir,
 		fileNameSuffix:       defaultFileNameSuffix,
@@ -231,7 +230,7 @@ func (g *goldie) WithSubTestNameForDir(use bool) error {
 // `name` refers to the name of the test and it should typically be unique
 // within the package. Also it should be a valid file name (so keeping to
 // `a-z0-9\-\_` is a good idea).
-func (g *goldie) Assert(t *testing.T, name string, actualData []byte) {
+func (g *goldie) Assert(t TestingT, name string, actualData []byte) {
 	t.Helper()
 	if *update {
 		err := g.Update(t, name, actualData)
@@ -271,7 +270,7 @@ func (g *goldie) Assert(t *testing.T, name string, actualData []byte) {
 // `name` refers to the name of the test and it should typically be unique
 // within the package. Also it should be a valid file name (so keeping to
 // `a-z0-9\-\_` is a good idea).
-func (g *goldie) AssertJson(t *testing.T, name string, actualJsonData interface{}) {
+func (g *goldie) AssertJson(t TestingT, name string, actualJsonData interface{}) {
 	t.Helper()
 	js, err := json.MarshalIndent(actualJsonData, "", "  ")
 
@@ -303,7 +302,7 @@ func normalizeLF(d []byte) []byte {
 // the name of the test and it should typically be unique within the package.
 // Also it should be a valid file name (so keeping to `a-z0-9\-\_` is a good
 // idea).
-func (g *goldie) AssertWithTemplate(t *testing.T, name string, data interface{}, actualData []byte) {
+func (g *goldie) AssertWithTemplate(t TestingT, name string, data interface{}, actualData []byte) {
 	t.Helper()
 	if *update {
 		err := g.Update(t, name, actualData)
@@ -341,7 +340,7 @@ func (g *goldie) AssertWithTemplate(t *testing.T, name string, data interface{},
 // This method does not need to be called from code, but it's exposed so that
 // it can be explicitly called if needed. The more common approach would be to
 // update using `go test -update ./...`.
-func (g *goldie) Update(t *testing.T, name string, actualData []byte) error {
+func (g *goldie) Update(t TestingT, name string, actualData []byte) error {
 	if err := g.ensureDir(filepath.Dir(g.GoldenFileName(t, name))); err != nil {
 		return err
 	}
@@ -351,7 +350,7 @@ func (g *goldie) Update(t *testing.T, name string, actualData []byte) error {
 
 // compare is reading the golden fixture file and compare the stored data with
 // the actual data.
-func (g *goldie) compare(t *testing.T, name string, actualData []byte) error {
+func (g *goldie) compare(t TestingT, name string, actualData []byte) error {
 	fn := g.GoldenFileName(t, name)
 	expectedData, err := ioutil.ReadFile(fn)
 
@@ -382,7 +381,7 @@ func (g *goldie) compare(t *testing.T, name string, actualData []byte) error {
 
 // compareTemplate is reading the golden fixture file and compare the stored
 // data with the actual data.
-func (g *goldie) compareTemplate(t *testing.T, name string, data interface{}, actualData []byte) error {
+func (g *goldie) compareTemplate(t TestingT, name string, data interface{}, actualData []byte) error {
 	fn := g.GoldenFileName(t, name)
 	expectedDataTmpl, err := ioutil.ReadFile(fn)
 
@@ -441,7 +440,7 @@ func (g *goldie) ensureDir(loc string) error {
 }
 
 // GoldenFileName simply returns the file name of the golden file fixture.
-func (g *goldie) GoldenFileName(t *testing.T, name string) string {
+func (g *goldie) GoldenFileName(t TestingT, name string) string {
 
 	dir := g.fixtureDir
 
