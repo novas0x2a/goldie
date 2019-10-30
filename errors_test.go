@@ -7,8 +7,8 @@ import (
 )
 
 func TestErrFixtureNotFound(t *testing.T) {
-	expected := "Golden fixture not found. Try running with -update flag."
-	err := newErrFixtureNotFound()
+	expected := `Golden fixture "meow" not found. Try running with -update flag.`
+	err := newErrFixtureNotFound("meow")
 
 	assert.Equal(t, expected, err.Error())
 	assert.IsType(t, &errFixtureNotFound{}, err)

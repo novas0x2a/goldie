@@ -111,17 +111,25 @@ func New(t *testing.T, options ...Option) *goldie {
 // expected. This method could be called in your own DiffFn in case you want
 // to leverage any of the engines defined.
 func Diff(engine DiffEngine, actual string, expected string) string {
+	return DiffHint(engine, actual, expected, "Expected")
+}
+
+// DiffHint generates a string that shows the difference between the actual and the
+// expected. This method could be called in your own DiffFn in case you want
+// to leverage any of the engines defined. It allows the filenames to be
+// hinted.
+func DiffHint(engine DiffEngine, actual string, expected string, expectedHint string) string {
 	var diff string
 
 	switch engine {
 	case Simple:
-		diff = fmt.Sprintf("Expected: %s\nGot: %s", expected, actual)
+		diff = fmt.Sprintf("%s: %s\nGot: %s", expectedHint, expected, actual)
 
 	case ClassicDiff:
 		diff, _ = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 			A:        difflib.SplitLines(expected),
 			B:        difflib.SplitLines(actual),
-			FromFile: "Expected",
+			FromFile: expectedHint,
 			FromDate: "",
 			ToFile:   "Actual",
 			ToDate:   "",
@@ -344,11 +352,12 @@ func (g *goldie) Update(t *testing.T, name string, actualData []byte) error {
 // compare is reading the golden fixture file and compare the stored data with
 // the actual data.
 func (g *goldie) compare(t *testing.T, name string, actualData []byte) error {
-	expectedData, err := ioutil.ReadFile(g.GoldenFileName(t, name))
+	fn := g.GoldenFileName(t, name)
+	expectedData, err := ioutil.ReadFile(fn)
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			return newErrFixtureNotFound()
+			return newErrFixtureNotFound(fn)
 		}
 
 		return fmt.Errorf("Expected %s to be nil", err.Error())
@@ -362,7 +371,7 @@ func (g *goldie) compare(t *testing.T, name string, actualData []byte) error {
 		if g.diffFn != nil {
 			msg += g.diffFn(actual, expected)
 		} else {
-			msg += Diff(g.diffEngine, actual, expected)
+			msg += DiffHint(g.diffEngine, actual, expected, fmt.Sprintf("Expected[%s]", fn))
 		}
 
 		return newErrFixtureMismatch(msg)
@@ -374,11 +383,12 @@ func (g *goldie) compare(t *testing.T, name string, actualData []byte) error {
 // compareTemplate is reading the golden fixture file and compare the stored
 // data with the actual data.
 func (g *goldie) compareTemplate(t *testing.T, name string, data interface{}, actualData []byte) error {
-	expectedDataTmpl, err := ioutil.ReadFile(g.GoldenFileName(t, name))
+	fn := g.GoldenFileName(t, name)
+	expectedDataTmpl, err := ioutil.ReadFile(fn)
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			return newErrFixtureNotFound()
+			return newErrFixtureNotFound(fn)
 		}
 
 		return fmt.Errorf("Expected %s to be nil", err.Error())
@@ -407,7 +417,7 @@ func (g *goldie) compareTemplate(t *testing.T, name string, data interface{}, ac
 		if g.diffFn != nil {
 			msg += g.diffFn(actual, expected)
 		} else {
-			msg += Diff(g.diffEngine, actual, expected)
+			msg += DiffHint(g.diffEngine, actual, expected, fmt.Sprintf("Expected[%s]", fn))
 		}
 
 		return newErrFixtureMismatch(msg)
